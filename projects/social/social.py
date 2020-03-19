@@ -1,3 +1,6 @@
+import random
+from util import Stack, Queue
+
 class User:
     def __init__(self, name):
         self.name = name
@@ -42,23 +45,65 @@ class SocialGraph:
         self.last_id = 0
         self.users = {}
         self.friendships = {}
-        # !!!! IMPLEMENT ME
 
         # Add users
+        for i in range(num_users):
+            self.add_user(f"User {i+1}")
 
         # Create friendships
+        # To create N random friendships,
+        # you could create a list with all possible friendship combinations,
+        # shuffle the list, then grab the first N elements from the list.
+        
+        possible_friendships = []
+        for user_id in self.users:
+            for friend_id in range(user_id + 1, self.last_id + 1):
+                possible_friendships.append((user_id, friend_id))
+
+        random.shuffle(possible_friendships)
+        # Create n friendships where n = avg_friendships * num_user // 2
+        # avg_ fships =  totalfships / num_users
+        #total_friendships = avg_friendships *num_users
+
+        for i in range(num_users * avg_friendships // 2):
+            friendship = possible_friendships[i]
+            self.add_friendship(friendship[0], friendship[1])
+
 
     def get_all_social_paths(self, user_id):
         """
         Takes a user's user_id as an argument
-
+        
         Returns a dictionary containing every user in that user's
         extended network with the shortest friendship path between them.
 
         The key is the friend's ID and the value is the path.
         """
-        visited = {}  # Note that this is a dictionary, not a set
-        # !!!! IMPLEMENT ME
+        visited = {}
+
+        q = Queue()
+        # Add A PATH TO the starting vertex_id to the queue
+        q.enqueue([user_id])
+        # While the queue is not empty...
+        while q.size() > 0:
+            # Dequeue the first PATH
+            path = q.dequeue()
+            # Grab the last vertex from the PATH
+            new_user = path[-1]
+            # Check if it's been visited
+            # If it has not been visited...
+            if new_user not in visited:
+                # Mark it as visited...
+                visited[new_user] = path
+                # Then add A PATH to its neighbors to the back of the queue
+                for neighbor in self.friendships[new_user]:
+                    # COPY THE PATH
+                    new_path = list(path)
+                    # Append the neighbor to the new path
+                    new_path.append(neighbor)
+                    # Enqueue the new path to the back of the queue
+                    q.enqueue(new_path)
+
         return visited
 
 
