@@ -19,6 +19,7 @@ def reverse(direction):
         return 'w'
 
 def new_way(room, visited_rooms):
+    #Help find the exit not explored
     visited_rooms[room.id] = {}
 
     for exit_direction in room.get_exits():
@@ -81,7 +82,6 @@ traversal_path = []
 
 visited_rooms = {}
 
-#Stack for DFT
 while len(visited_rooms) < len(room_graph):
     if player.current_room.id not in visited_rooms:
         new_way(player.current_room, visited_rooms)
@@ -108,7 +108,9 @@ while len(visited_rooms) < len(room_graph):
                         player.travel(exit_direction)
 
     else:
+        #randomly choose an exit
         new_exit = random.choice(exits)
+        #appened to the traversal path
         traversal_path.append(new_exit)
         new_room = player.current_room.get_room_in_direction(new_exit)
         visited_rooms[player.current_room.id][new_exit] = new_room.id
