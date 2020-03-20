@@ -18,31 +18,41 @@ def reverse(direction):
     else:
         return 'w'
 
-def new_way(room):
+def new_way(room, visited_rooms):
     visited_rooms[room.id] = {}
 
-    for exit in room.get_exits():
-        visited_rooms[room.id][exit]= '?'
+    for exit_direction in room.get_exits():
+        visited_rooms[room.id][exit_direction]= '?'
 
-def bfs():
+# starting = current room.id
+# make queue
+# enqueue single element list with starting
+# make empty visited set
+# while queue is not empty
+# dequeue path
+# check last element
+# if it hasn't been visited, add to visited
+# loop through exits of last element
+# check if exit == ? return path
+# else append new room to path
+# enqueue new path
+
+def bfs(visited_rooms):
     room = player.current_room
     q = Queue()
     q.enqueue([room.id])
     visited = set()
-
     while q.size() > 0:
         path = q.dequeue()
         last = path[-1]
-
         if last not in visited:
             visited.add(last)
-
-            for exit in visited_rooms[room.id]:
-                if (visited_rooms[room.id]):
+            for exit_direction in visited_rooms[last]:
+                if (visited_rooms[last][exit_direction] == '?'):
                     return path
-                new_path =path + [visited_rooms[room.id]]
-                q.enqueue(new_path)
-
+                elif (visited_rooms[last][exit_direction] not in visited):
+                    new_path = path + [visited_rooms[last][exit_direction]]
+                    q.enqueue(new_path)
     return path
 
 # Load world
@@ -52,9 +62,9 @@ world = World()
 # You may uncomment the smaller graphs for development and testing purposes.
 # map_file = "projects/adventure/maps/test_line.txt"
 # map_file = "projects/adventure/maps/test_cross.txt"
-map_file = "projects/adventure/maps/test_loop.txt"
+# map_file = "projects/adventure/maps/test_loop.txt"
 # map_file = "projects/adventure/maps/test_loop_fork.txt"
-# map_file = "projects/adventure/maps/main_maze.txt"
+map_file = "projects/adventure/maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph=literal_eval(open(map_file, "r").read())
@@ -69,60 +79,52 @@ player = Player(world.starting_room)
 # traversal_path = ['n', 'n']
 traversal_path = []
 
-
-#Try DFT to get a path to visit all but might not be the shortest and possibly might not meet sprint req
-#Backtrack? Reverse function
-#Write Algorthim here
-
-# TRAVERSAL TEST
-
+visited_rooms = {}
 
 #Stack for DFT
-s = Stack()
-s.push(player.current_room)
-#Using a dictionary instead of set
-visited_rooms = {}
-new_way(player.current_room)
-
 while len(visited_rooms) < len(room_graph):
-    room = s.pop()
+    if player.current_room.id not in visited_rooms:
+        new_way(player.current_room, visited_rooms)
 
-    if room is None:
-        path = bfs()
+    exits = []
+    for new_direction in visited_rooms[player.current_room.id]:
+        if (visited_rooms[player.current_room.id][new_direction] == '?'):
+            exits.append(new_direction)
+
+    if (len(exits) == 0):
+        path = bfs(visited_rooms)
+        # translate room id to direction
         for id in path:
-            for exit in visited_rooms[player.current_room.id]:
-                if(visited_rooms[player.current_room.id][exit] == player.current_room.id != id):
-                    traversal_path.append(exit)
-                    player.travel(exit)
+            for exit_direction in visited_rooms[player.current_room.id]:
+                if (exit_direction in visited_rooms[player.current_room.id]):
+                    print(f"Current room is {player.current_room.id} and direction is {exit_direction}")
+                    if (visited_rooms[player.current_room.id][exit_direction] == id and player.current_room.id != id):
+                        traversal_path.append(exit_direction)
+                        new_room = player.current_room.get_room_in_direction(exit_direction)
+                        visited_rooms[player.current_room.id][exit_direction] = new_room.id
+                        if (new_room.id not in visited_rooms):
+                            new_way(new_room, visited_rooms)
+                        visited_rooms[new_room.id][reverse(exit_direction)] = player.current_room.id
+                        player.travel(exit_direction)
 
-    unexplored = []
-            
-    for exit in visited_rooms[room.id]:
-        if (visited_rooms[room.id][exit] == '?'):
-            unexplored.append(exit)
+    else:
+        new_exit = random.choice(exits)
+        traversal_path.append(new_exit)
+        new_room = player.current_room.get_room_in_direction(new_exit)
+        visited_rooms[player.current_room.id][new_exit] = new_room.id
+        if (new_room.id not in visited_rooms):
+            new_way(new_room, visited_rooms)
+        visited_rooms[new_room.id][reverse(new_exit)] = player.current_room.id
+        player.travel(new_exit)
 
-    for exit in visited_rooms[room.id]:
-        if (visited_rooms[room.id][exit] == '?'):
-            traversal_path.append(exit)
+# TRAVERSAL TEST
+visited_rooms = set()
+player.current_room = world.starting_room
+visited_rooms.add(player.current_room)
 
-            new_room = room.get_room_in_direction(exit)
-
-            visited_rooms[player.current_room.id][exit] = new_room.id
-
-            new_way(new_room)
-
-            visited_rooms[new_room.id][reverse(exit)] = player.current_room.id
-
-            player.travel(exit)
-
-            s.push(player.current_room)
-
-            unexplored.remove(exit)
-
-print("Finished, Visited rooms:", visited_rooms)
-
-print(traversal_path)
-
+for move in traversal_path:
+    player.travel(move)
+    visited_rooms.add(player.current_room)
 
 if len(visited_rooms) == len(room_graph):
     print(f"TESTS PASSED: {len(traversal_path)} moves, {len(visited_rooms)} rooms visited")
